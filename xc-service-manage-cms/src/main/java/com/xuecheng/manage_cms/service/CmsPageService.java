@@ -1,5 +1,6 @@
 package com.xuecheng.manage_cms.service;
 
+import com.alibaba.fastjson.JSON;
 import com.xuecheng.framework.domain.cms.CmsPage;
 import com.xuecheng.framework.domain.cms.request.QueryPageRequest;
 import com.xuecheng.framework.domain.cms.response.CmsCode;
@@ -9,11 +10,20 @@ import com.xuecheng.framework.model.response.CommonCode;
 import com.xuecheng.framework.model.response.QueryResponseResult;
 import com.xuecheng.framework.model.response.QueryResult;
 import com.xuecheng.framework.model.response.ResponseResult;
+import com.xuecheng.manage_cms.config.RabbitMQConfig;
 import com.xuecheng.manage_cms.dao.CmsPageRepository;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.bson.types.ObjectId;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
+import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.stereotype.Service;
+//import sun.misc.IOUtils;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Optional;
 
 @Service
@@ -88,7 +98,23 @@ public class CmsPageService {
         if (!res.isSuccess()) {
             RuntimeExceptionCast.cast(CmsCode.CMS_UNLEGAL_PARAMSINPURL);
         }
-        repository.save(cmsPage);
+        CmsPage upload = res.getCmsPage();
+
+        upload.setTemplateId(cmsPage.getTemplateId());
+        //更新所属站点
+        upload.setSiteId(cmsPage.getSiteId());
+        //更新页面别名
+        upload.setPageAliase(cmsPage.getPageAliase());
+        //更新页面名称
+        upload.setPageName(cmsPage.getPageName());
+        //更新访问路径
+        upload.setPageWebPath(cmsPage.getPageWebPath());
+        //更新物理路径
+        upload.setPagePhysicalPath(cmsPage.getPagePhysicalPath());
+
+        upload.setDataUrl(cmsPage.getDataUrl());
+
+        repository.save(upload);
         return new CmsPageResult(CommonCode.SUCCESS, cmsPage);
     }
 
@@ -111,5 +137,66 @@ public class CmsPageService {
 
         repository.deleteById(id);
         return new ResponseResult(CommonCode.SUCCESS);
+    }
+
+    /**
+     * @Author whywhathow
+     * 页面发布
+     * 1. 获取静态页面 -html
+     * 2. 将静态页面存入 gridFs中
+     * 3. 更新cmsPage 页面信息:htmlFIleId, 保存
+     * 4. 发送消息给交换机,结束
+     **/
+    @Autowired
+    PagePreviewService pagePreviewService;
+
+    public ResponseResult postPage(String pageId) {
+        // 1. 获取静态化后html数据
+        String html = pagePreviewService.getPreviewPageByPageId(pageId);
+        if (StringUtils.isEmpty(html)) {
+            // 排除生成页面为空的情况
+            RuntimeExceptionCast.cast(CmsCode.CMS_GENERATEHTML_HTMLISNULL);
+        }
+        CmsPageResult res = findByPageId(pageId);
+
+        CmsPage cmsPage = res.getCmsPage();
+        // 2. 存储html 到gridFs中
+        cmsPage = saveHTMLToGridFS(html, cmsPage);
+        // 3. 跟新cmsPage信息, 保存htmlfileID
+         cmsPage= repository.save(cmsPage);
+        // 4. 发送消息到rabbitmq中
+        sendMessageToRabbitMQ(cmsPage);
+        //todo
+        return new ResponseResult(CommonCode.SUCCESS);
+    }
+
+    @Autowired
+    RabbitTemplate rabbitTemplate;
+
+    // todo ,
+    // 将消息发送给MQ
+    private void sendMessageToRabbitMQ(CmsPage cmsPage) {
+        String s = JSON.toJSONString(cmsPage);
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_ROUTING_CMS_POSTPAGE, cmsPage.getSiteId(),
+               s);
+    }
+
+    @Autowired
+    GridFsTemplate gridFsTemplate;
+
+    // 将生成的html文件保存到GridFs中
+    private CmsPage saveHTMLToGridFS(String html, CmsPage page) {
+        try {
+            InputStream inputStream = IOUtils.toInputStream(html, "utf-8");
+            ObjectId objectId = gridFsTemplate.store(inputStream, page.getPageName(), "utf-8");
+            if (objectId == null) {
+                RuntimeExceptionCast.cast(CmsCode.CMS_GRIDFS_STORE_HTML_FAIL);
+            }
+            page.setHtmlFileId(objectId.toHexString());
+            return page;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

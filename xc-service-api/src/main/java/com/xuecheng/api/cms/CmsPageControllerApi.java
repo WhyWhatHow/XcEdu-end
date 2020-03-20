@@ -4,12 +4,13 @@ import com.xuecheng.framework.domain.cms.CmsPage;
 import com.xuecheng.framework.domain.cms.request.QueryPageRequest;
 import com.xuecheng.framework.domain.cms.response.CmsPageResult;
 import com.xuecheng.framework.model.response.QueryResponseResult;
-import com.xuecheng.framework.model.response.Response;
 import com.xuecheng.framework.model.response.ResponseResult;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+
+//TODO  查询: pageName 模糊查询, pageType :精确查询
 
 @Api(value = "cms页面管理接口", tags = "cms页面管理接口，提供页面的增、删、改、查")
 public interface CmsPageControllerApi {
@@ -29,4 +30,7 @@ public interface CmsPageControllerApi {
     public CmsPageResult editPage(String id , CmsPage cmsPage);
     @ApiOperation("删除页面")
     public ResponseResult delPage(String id);
+    @ApiOperation("发布页面")
+    public ResponseResult postPage(String pageId);
+
 }
