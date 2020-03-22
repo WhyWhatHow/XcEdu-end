@@ -32,7 +32,7 @@ public class ExceptionCatch {
     // 处理框架,系统异常
     //定义map，配置异常类型所对应的错误代码
     private static ImmutableMap<Class<? extends Throwable>, ResultCode> EXCEPTIONS;
-    //定义map的builder对象，去构建ImmutableMap
+    // 定义map的builder对象，去构建ImmutableMap
     protected static ImmutableMap.Builder<Class<? extends Throwable>, ResultCode> builder = ImmutableMap.builder();
 
     @ExceptionHandler(Exception.class)
