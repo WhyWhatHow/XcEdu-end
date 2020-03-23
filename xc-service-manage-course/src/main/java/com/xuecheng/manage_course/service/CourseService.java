@@ -4,6 +4,7 @@ import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.xuecheng.framework.domain.course.CourseBase;
 import com.xuecheng.framework.domain.course.CourseMarket;
+import com.xuecheng.framework.domain.course.CoursePic;
 import com.xuecheng.framework.domain.course.Teachplan;
 import com.xuecheng.framework.domain.course.ext.CourseInfo;
 import com.xuecheng.framework.domain.course.ext.TeachplanNode;
@@ -16,12 +17,10 @@ import com.xuecheng.framework.model.response.QueryResponseResult;
 import com.xuecheng.framework.model.response.QueryResult;
 import com.xuecheng.framework.model.response.ResponseResult;
 import com.xuecheng.manage_course.controller.CourseController;
-import com.xuecheng.manage_course.dao.CourseBaseRepository;
-import com.xuecheng.manage_course.dao.CourseMapper;
-import com.xuecheng.manage_course.dao.CourseMarketRepository;
-import com.xuecheng.manage_course.dao.TeachPlanRepository;
+import com.xuecheng.manage_course.dao.*;
 import com.xuecheng.manage_course.mapper.TeachPlanMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.aspectj.apache.bcel.classfile.annotation.RuntimeInvisAnnos;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -211,5 +210,44 @@ public class CourseService {
         // 如下写法:若修改失败,则无反馈结果,所以进行修改
 //        return new ResponseResult(CommonCode.SUCCESS);
         return one;
+    }
+
+    @Autowired
+    CoursePictureRepository pictureRepository;
+
+    @Transactional
+    public ResponseResult addCoursePic(String courseId, String fileId) {
+        if (StringUtils.isEmpty(courseId) || StringUtils.isEmpty(fileId)) {
+            RuntimeExceptionCast.cast(CommonCode.INVALID_PARAM);
+        }
+        CoursePic coursePic = new CoursePic();
+        coursePic.setCourseid(courseId);
+        coursePic.setPic(fileId);
+        CoursePic save = pictureRepository.save(coursePic);
+        return new ResponseResult(CommonCode.SUCCESS);
+    }
+
+    public CoursePic findCoursePicByCourseId(String courseId) {
+        if (StringUtils.isEmpty(courseId)) {
+            RuntimeExceptionCast.cast(CommonCode.INVALID_PARAM);
+        }
+        Optional<CoursePic> optional = pictureRepository.findById(courseId);
+        if (optional.isPresent()) {
+            return optional.get();
+        }
+        return null;
+    }
+
+    @Transactional
+    public ResponseResult deleteCoursePicById(String courseId) {
+        if (StringUtils.isEmpty(courseId)) {
+            RuntimeExceptionCast.cast(CommonCode.INVALID_PARAM);
+        }
+        long res = pictureRepository.deleteCoursePicByCourseid(courseId);
+        if (res > 0) {
+            return new ResponseResult(CommonCode.SUCCESS);
+        } else {
+            return new ResponseResult(CommonCode.FAIL);
+        }
     }
 }
