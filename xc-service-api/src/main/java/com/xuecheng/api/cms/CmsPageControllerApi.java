@@ -2,6 +2,7 @@ package com.xuecheng.api.cms;
 
 import com.xuecheng.framework.domain.cms.CmsPage;
 import com.xuecheng.framework.domain.cms.request.QueryPageRequest;
+import com.xuecheng.framework.domain.cms.response.CmsPageRemotePostResult;
 import com.xuecheng.framework.domain.cms.response.CmsPageResult;
 import com.xuecheng.framework.model.response.QueryResponseResult;
 import com.xuecheng.framework.model.response.ResponseResult;
@@ -32,5 +33,9 @@ public interface CmsPageControllerApi {
     public ResponseResult delPage(String id);
     @ApiOperation("发布页面")
     public ResponseResult postPage(String pageId);
+    @ApiOperation("页面存在,则更新页面,页面不存在,则添加页面")
+    public  CmsPageResult savePage(CmsPage page);
 
+    @ApiOperation("一键发布页面")
+    public CmsPageRemotePostResult quickPost(CmsPage page);
 }

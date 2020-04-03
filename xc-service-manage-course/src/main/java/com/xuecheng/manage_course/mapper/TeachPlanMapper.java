@@ -8,6 +8,6 @@ import org.apache.ibatis.annotations.Select;
 public interface TeachPlanMapper {
     TeachplanNode selectTeachPlanByCourseId(String id);
     @Select("\n" +
-            "SELECT id FROM teachplan WHERE courseid=#{id} AND parentid = '0'")
+            "SELECT id FROM teachplan WHERE courseid=#{id} AND parentid = '0' ")
     String findIdByCourseIdAndParentID(String id);
 }

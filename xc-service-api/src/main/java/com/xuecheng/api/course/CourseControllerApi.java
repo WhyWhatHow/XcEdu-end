@@ -1,19 +1,19 @@
 package com.xuecheng.api.course;
 
+import com.xuecheng.framework.domain.course.response.CoursePreviewResult;
+import com.xuecheng.framework.domain.course.response.CoursePublishResult;
 import com.xuecheng.framework.domain.course.CourseBase;
 import com.xuecheng.framework.domain.course.CourseMarket;
 import com.xuecheng.framework.domain.course.CoursePic;
 import com.xuecheng.framework.domain.course.Teachplan;
-import com.xuecheng.framework.domain.course.ext.CourseInfo;
+import com.xuecheng.framework.domain.course.ext.CourseDetail;
 import com.xuecheng.framework.domain.course.ext.TeachplanNode;
 import com.xuecheng.framework.domain.course.request.CourseListRequest;
 import com.xuecheng.framework.domain.course.response.AddCourseResult;
 import com.xuecheng.framework.model.response.QueryResponseResult;
-import com.xuecheng.framework.model.response.QueryResult;
 import com.xuecheng.framework.model.response.ResponseResult;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.springframework.web.bind.annotation.GetMapping;
 
 @Api(value = "课程管理接口",description = "提供课程的curd")
 public interface CourseControllerApi {
@@ -42,4 +42,12 @@ public interface CourseControllerApi {
     public CoursePic findCoursePictureByCourseId(String couseId);
     @ApiOperation("删除课程图片")
     public ResponseResult deleteCoursePicByCourseId(String courseId);
+
+    @ApiOperation("获取课程详情页面")
+    public CourseDetail getCourseDetailByCourseId(String courseId);
+    @ApiOperation("课程详情页面预览")
+    public CoursePreviewResult previewCourseDetail(String courseId);
+
+    @ApiOperation("发布课程")
+    public CoursePublishResult publishCourse(String courseId );
 }

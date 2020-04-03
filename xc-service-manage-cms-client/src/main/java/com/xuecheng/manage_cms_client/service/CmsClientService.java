@@ -4,8 +4,10 @@ import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSDownloadStream;
 import com.mongodb.client.gridfs.model.GridFSFile;
 import com.xuecheng.framework.domain.cms.CmsPage;
+import com.xuecheng.framework.domain.cms.CmsSite;
 import com.xuecheng.framework.domain.cms.response.CmsCode;
 import com.xuecheng.framework.exception.RuntimeExceptionCast;
+import com.xuecheng.manage_cms_client.dao.CmsSiteRepository;
 import com.xuecheng.manage_cms_client.mq.ConsumerPostPage;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -22,6 +24,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Optional;
 
 @Service
 public class CmsClientService {
@@ -37,21 +40,40 @@ public class CmsClientService {
     GridFSBucket gridFSBucket;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CmsClientService.class);
+@Autowired
+    CmsSiteRepository repository;
 
+    /**
+     *  页面绝对路径:= sitePhysicalPath + pagePhysicalPath+ pageName
+     * @param page
+     */
     public void PostPage(CmsPage page) {
-        // 获取页面存储路径
-        String pageWebPath = page.getPageWebPath();
-        if (StringUtils.isEmpty(pageWebPath)) {
-            LOGGER.error("error in cmsClient.postPage, webPath is NULL");
-            RuntimeExceptionCast.cast(CmsCode.CMS_POSTPAGE_WEBPATHISNULL);
+        Optional<CmsSite> opt = repository.findById(page.getSiteId());
+        if(!opt.isPresent()){
+            LOGGER.error("error in cmsClient, sitePhysicalPath is NULL");
+            RuntimeExceptionCast.cast(CmsCode.CMS_POSTPAGE_PHYSICALPATHISNULL);
         }
-        String pagePhysicalPath = page.getPagePhysicalPath();
-        if (StringUtils.isEmpty(pagePhysicalPath)) {
+        CmsSite cmsSite = opt.get();
+        String physicalPath = cmsSite.getSitePhysicalPath();
+        if (StringUtils.isEmpty(physicalPath)) {
             LOGGER.error("error in cmsClient.postPage, physicalPath is NULL");
             RuntimeExceptionCast.cast(CmsCode.CMS_POSTPAGE_PHYSICALPATHISNULL);
         }
+        // 获取页面存储路径
+        String pagePhysicalPath = page.getPagePhysicalPath();
+        if (StringUtils.isEmpty(pagePhysicalPath)) {
+            LOGGER.error("error in cmsClient.postPage, webPath is NULL");
+            RuntimeExceptionCast.cast(CmsCode.CMS_POSTPAGE_PHYSICALPATHISNULL);
+        }
+//        String pagePhysicalPath = page.getPagePhysicalPath();
+        String fileName =page.getPageName();
+        if (StringUtils.isEmpty(fileName)) {
+            LOGGER.error("error in cmsClient.postPage, filename is NULL");
+            RuntimeExceptionCast.cast(CmsCode.CMS_POSTPAGE_PHYSICALPATHISNULL);
+        }
 
-        String path = pagePhysicalPath + pageWebPath;
+
+        String path = physicalPath + pagePhysicalPath+fileName;
         // 获取下载流
         InputStream stream = null;
         FileOutputStream outputStream = null;

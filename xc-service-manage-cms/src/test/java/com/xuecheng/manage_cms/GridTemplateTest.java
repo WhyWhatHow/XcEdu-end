@@ -28,14 +28,14 @@ public class GridTemplateTest {
 
     @Autowired
     GridFsTemplate gridFsTemplate;
-
-    // 测试fsgridFs 存文件
+// // TODO: 2020/3/26  尚未实现: 教育机构页面模板、教师信息页面模板、课程统计信息json模板、教育机构统计信息json模板 
+    // 测试 fsgridFs 存文件
     @Test
     public void testGridFsStore() throws FileNotFoundException {
         // 对应文件的id 5e722999a3f9471b90334600
-        File file = new File("d:/index_banner.ftl");
+        File file = new File("d:/course.ftl");
         FileInputStream inputStream = new FileInputStream(file);
-        ObjectId store = gridFsTemplate.store(inputStream, "index_banner.ftl");
+        ObjectId store = gridFsTemplate.store(inputStream, "course.ftl");
         System.out.println(store);
 //        5e732589a3f947301c2ac45b
     }

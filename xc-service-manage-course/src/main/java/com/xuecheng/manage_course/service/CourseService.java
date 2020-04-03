@@ -2,10 +2,16 @@ package com.xuecheng.manage_course.service;
 
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
+import com.xuecheng.framework.domain.cms.CmsPage;
+import com.xuecheng.framework.domain.cms.response.CmsPageRemotePostResult;
+import com.xuecheng.framework.domain.cms.response.CmsPageResult;
+import com.xuecheng.framework.domain.course.response.CoursePreviewResult;
+import com.xuecheng.framework.domain.course.response.CoursePublishResult;
 import com.xuecheng.framework.domain.course.CourseBase;
 import com.xuecheng.framework.domain.course.CourseMarket;
 import com.xuecheng.framework.domain.course.CoursePic;
 import com.xuecheng.framework.domain.course.Teachplan;
+import com.xuecheng.framework.domain.course.ext.CourseDetail;
 import com.xuecheng.framework.domain.course.ext.CourseInfo;
 import com.xuecheng.framework.domain.course.ext.TeachplanNode;
 import com.xuecheng.framework.domain.course.request.CourseListRequest;
@@ -16,13 +22,13 @@ import com.xuecheng.framework.model.response.CommonCode;
 import com.xuecheng.framework.model.response.QueryResponseResult;
 import com.xuecheng.framework.model.response.QueryResult;
 import com.xuecheng.framework.model.response.ResponseResult;
-import com.xuecheng.manage_course.controller.CourseController;
+import com.xuecheng.manage_course.client.CmsPageClient;
 import com.xuecheng.manage_course.dao.*;
 import com.xuecheng.manage_course.mapper.TeachPlanMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.aspectj.apache.bcel.classfile.annotation.RuntimeInvisAnnos;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -249,5 +255,109 @@ public class CourseService {
         } else {
             return new ResponseResult(CommonCode.FAIL);
         }
+    }
+
+    public CourseDetail getCourseDetailById(String courseId) {
+        CourseMarket market = this.findmarketByCourseId(courseId);
+        CourseBase courseBase = this.findCourseBaseByCourseId(courseId);
+        TeachplanNode node = this.getTeachPlanByCourseId(courseId);
+        CoursePic pic = this.findCoursePicByCourseId(courseId);
+        return new CourseDetail(courseBase, market, pic, node);
+    }
+
+    // 从apllication.yml中获取配置信息
+    @Value("${course-publish.siteId}")
+    String publish_siteId;
+    @Value("${course-publish.dataUrlPre}")
+    private String publish_dataUrlPre;
+    @Value("${course-publish.pagePhysicalPath}")
+    private String publish_page_physicalpath;
+    @Value("${course-publish.pageWebPath}")
+    private String publish_page_webpath;
+    @Value("${course-publish.templateId}")
+    private String publish_templateId;
+    @Value("${course-publish.previewUrl}")
+    private String previewUrl;
+
+    /**
+     * 根据课程id 获取页面预览的url
+     * step:
+     * 1. 组成cmspage页面
+     * 2, 调用远程方法保存cmsPage
+     * 3. 返回页面预览url
+     *
+     * @param courseId
+     * @return 页面详情页预览的url
+     */
+    public CoursePreviewResult previewCourseDetail(String courseId) {
+        CourseBase base = findCourseBaseByCourseId(courseId);
+        CmsPage page = initCmsPage(base, courseId);
+        CmsPageResult result = pageClient.savePage(page);
+        if (!result.isSuccess()) {
+            RuntimeExceptionCast.cast(CourseCode.COURSE_PUBLISH_VIEWERROR);
+        }
+        CmsPage downloadPage = result.getCmsPage();
+        String url = previewUrl + downloadPage.getPageId();
+        return new CoursePreviewResult(CommonCode.SUCCESS, url);
+    }
+
+    /**
+     * 初始化cmsPage页面
+     *
+     * @param courseId
+     * @return
+     */
+    private CmsPage initCmsPage(CourseBase base, String courseId) {
+        // 组成cmsPage页面信息 pageId: 4028e581617f945f01617f9dabc40000
+        //                            4028e581617f945f01617f9dabc40000
+        CmsPage page = new CmsPage();
+        page.setPageName(courseId + ".html");
+
+        page.setPageAliase(base.getName());
+        //      siteId: 5e800c8b83e280056463e674 # 站点id
+        page.setSiteId(publish_siteId);
+        //  templateId: 5e7c64c99484362aa8210030 # 课程详情页面模板id
+        page.setTemplateId(publish_templateId);
+        //  pageWebPath: /course/detail/
+        page.setPageWebPath(publish_page_webpath);
+        //  pagePhysicalPath: /course/detail/
+        page.setPagePhysicalPath(publish_page_physicalpath);
+        //  dataUrlPre: http://localhost:31200/course/courseview/
+        page.setDataUrl(publish_dataUrlPre + courseId);
+        //  previewUrl: http://www.xuecheng.com/cms/preview/
+        return page;
+    }
+
+    @Autowired
+    CmsPageClient pageClient;
+
+    /**
+     * 发布课程,
+     * 1, 准备cmspage 数据
+     * 2. 调用cmspage.发布功能
+     * 3. 修改页面信息, 加入elastic search index , 添加缓存文件
+     * 4. 返回结果
+     *
+     * @param courseId
+     * @return
+     */
+    @Transactional
+    public CoursePublishResult publishCourseDetail(String courseId) {
+        CourseBase base = findCourseBaseByCourseId(courseId);
+        // 初始化请求cmsPage页面
+        CmsPage page = initCmsPage(base, courseId);
+        // 发送请求
+        CmsPageRemotePostResult result = pageClient.postPage(page);
+        if (!result.isSuccess()) {
+            RuntimeExceptionCast.cast(CommonCode.FAIL);
+        }
+        String url = result.getUrl();
+        // 跟新页面信息
+        base.setStatus("202002");
+        courseBaseRepository.save(base);
+        //// TODO: 2020/3/29   将 课程信息 加入到缓存中,索引中
+        return new CoursePublishResult(CommonCode.SUCCESS, url);
+
+
     }
 }

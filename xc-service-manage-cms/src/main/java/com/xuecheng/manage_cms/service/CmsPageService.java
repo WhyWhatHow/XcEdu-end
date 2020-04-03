@@ -2,8 +2,10 @@ package com.xuecheng.manage_cms.service;
 
 import com.alibaba.fastjson.JSON;
 import com.xuecheng.framework.domain.cms.CmsPage;
+import com.xuecheng.framework.domain.cms.CmsSite;
 import com.xuecheng.framework.domain.cms.request.QueryPageRequest;
 import com.xuecheng.framework.domain.cms.response.CmsCode;
+import com.xuecheng.framework.domain.cms.response.CmsPageRemotePostResult;
 import com.xuecheng.framework.domain.cms.response.CmsPageResult;
 import com.xuecheng.framework.exception.RuntimeExceptionCast;
 import com.xuecheng.framework.model.response.CommonCode;
@@ -12,6 +14,7 @@ import com.xuecheng.framework.model.response.QueryResult;
 import com.xuecheng.framework.model.response.ResponseResult;
 import com.xuecheng.manage_cms.config.RabbitMQConfig;
 import com.xuecheng.manage_cms.dao.CmsPageRepository;
+import com.xuecheng.manage_cms.dao.CmsSiteRepository;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
@@ -84,12 +87,11 @@ public class CmsPageService {
         if (check != null) {
             // 已经存在该页面
             RuntimeExceptionCast.cast(CmsCode.CMS_ADDPAGE_EXISTSNAME);
-//            return new CmsPageResult(CommonCode.FAIL, null);//todo 异常统一处理
         }
         // 避免主键不一致的问题
         cmsPage.setPageId(null);
-        repository.save(cmsPage);
-        return new CmsPageResult(CommonCode.SUCCESS, cmsPage);
+        CmsPage save = repository.save(cmsPage);
+        return new CmsPageResult(CommonCode.SUCCESS, save);
 
     }
 
@@ -115,7 +117,7 @@ public class CmsPageService {
         upload.setDataUrl(cmsPage.getDataUrl());
 
         repository.save(upload);
-        return new CmsPageResult(CommonCode.SUCCESS, cmsPage);
+        return new CmsPageResult(CommonCode.SUCCESS, upload);
     }
 
     public CmsPageResult findByPageId(String pageId) {
@@ -139,17 +141,16 @@ public class CmsPageService {
         return new ResponseResult(CommonCode.SUCCESS);
     }
 
+    @Autowired
+    PagePreviewService pagePreviewService;
+
     /**
-     * @Author whywhathow
      * 页面发布
      * 1. 获取静态页面 -html
      * 2. 将静态页面存入 gridFs中
      * 3. 更新cmsPage 页面信息:htmlFIleId, 保存
      * 4. 发送消息给交换机,结束
      **/
-    @Autowired
-    PagePreviewService pagePreviewService;
-
     public ResponseResult postPage(String pageId) {
         // 1. 获取静态化后html数据
         String html = pagePreviewService.getPreviewPageByPageId(pageId);
@@ -163,7 +164,7 @@ public class CmsPageService {
         // 2. 存储html 到gridFs中
         cmsPage = saveHTMLToGridFS(html, cmsPage);
         // 3. 跟新cmsPage信息, 保存htmlfileID
-         cmsPage= repository.save(cmsPage);
+        cmsPage = repository.save(cmsPage);
         // 4. 发送消息到rabbitmq中
         sendMessageToRabbitMQ(cmsPage);
         //todo
@@ -177,8 +178,7 @@ public class CmsPageService {
     // 将消息发送给MQ
     private void sendMessageToRabbitMQ(CmsPage cmsPage) {
         String s = JSON.toJSONString(cmsPage);
-        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_ROUTING_CMS_POSTPAGE, cmsPage.getSiteId(),
-               s);
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_ROUTING_CMS_POSTPAGE, cmsPage.getSiteId(), s);
     }
 
     @Autowired
@@ -196,6 +196,51 @@ public class CmsPageService {
             return page;
         } catch (IOException e) {
             e.printStackTrace();
+        }
+        return null;
+    }
+
+    public CmsPageResult savePage(CmsPage page) {
+        CmsPage now = repository.findBySiteIdAndPageNameAndPageWebPath(page.getSiteId(), page.getPageName(), page.getPageWebPath());
+        CmsPageResult res = null;
+        if (now == null) {
+            // 当前并没有该页面, 则添加新页面
+            res = this.addPage(page);
+        } else {
+            // 已存在页面,则更新页面
+            res = this.editPage(now.getPageId(), page);
+        }
+        return res;
+    }
+
+    @Autowired
+    CmsSiteRepository siteRepository;
+
+    public CmsPageRemotePostResult postPageQuick(CmsPage page) {
+        //1 .保存页面信息
+        CmsPageResult cmsPageResult = this.savePage(page);
+        if (!cmsPageResult.isSuccess()) {
+            RuntimeExceptionCast.cast(CommonCode.FAIL);
+        }
+        CmsPage cmsPage = cmsPageResult.getCmsPage();
+        String pageId = cmsPage.getPageId();
+        // 2. 发布页面
+        ResponseResult responseResult = postPage(pageId);
+        // 3. 返回页面的url= siteDomain + siteWebPath+ pageWebPath + pageName
+        String siteUrl = this.findSiteUrlByCmsPage(cmsPage);
+
+        String url = siteUrl + cmsPage.getPageWebPath() + cmsPage.getPageName();
+        return new CmsPageRemotePostResult(CommonCode.SUCCESS, url);
+    }
+
+    private String findSiteUrlByCmsPage(CmsPage page) {
+        if (page == null || StringUtils.isEmpty(page.getSiteId())) {
+            RuntimeExceptionCast.cast(CommonCode.INVALID_PARAM);
+        }
+        Optional<CmsSite> opt = siteRepository.findById(page.getSiteId());
+        if (opt.isPresent()) {
+            CmsSite cmsSite = opt.get();
+            return cmsSite.getSiteDomain() + cmsSite.getSiteWebPath();
         }
         return null;
     }

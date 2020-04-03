@@ -25,7 +25,15 @@ public class FreeMarkerController {
         map.putAll(body);
         return "index_banner";
     }
+    @GetMapping("/coursedetail")
+    String getCourseDetail(Map map){
+        ResponseEntity<Map> entity = restTemplate.getForEntity("http://127.0.0.1:31200/course/courseview/4028e581617f945f01617f9dabc40000", Map.class);
+        Map body = entity.getBody();
+        System.out.println(body);
+        map.putAll(body);
+        return "course";
 
+    }
     @GetMapping("/test01")
     public  String getPage(Map<String, Object> map){
         //向数据模型放数据

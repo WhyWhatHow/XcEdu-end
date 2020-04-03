@@ -78,10 +78,14 @@ public class FreemarkerTest {
         String content = FreeMarkerTemplateUtils.processTemplateIntoString(template, map);
         //静态化内容
         System.out.println(content);
-         InputStream inputStream = IOUtils.toInputStream(content);
+        InputStream inputStream = IOUtils.toInputStream(content);
         //输出文件
         FileOutputStream fileOutputStream = new FileOutputStream(new File("d:/test1.html"));
         IOUtils.copy(inputStream, fileOutputStream);
+    }
+    @Test
+    public  void testStore(){
+
     }
 
     //数据模型

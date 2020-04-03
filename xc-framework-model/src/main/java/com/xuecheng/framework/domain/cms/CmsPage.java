@@ -2,14 +2,11 @@ package com.xuecheng.framework.domain.cms;
 
 import com.xuecheng.framework.domain.cms.request.QueryPageRequest;
 import io.swagger.annotations.ApiModelProperty;
-import lombok.Data;
-import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 
 /**
