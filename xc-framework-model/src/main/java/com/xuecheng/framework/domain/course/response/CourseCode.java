@@ -20,6 +20,9 @@ public enum CourseCode implements ResultCode {
 
     COURSE_TEACHPLAN_ROOT_IS_NULL(false,33000,"该课程的教学计划根节点尚未创建"),
 
+
+    COURSE_SEARCH_ERROR(false,34000,"课程查询失败"),
+
     COURSE_MEDIS_URLISNULL(false,31101,"选择的媒资文件访问地址为空！"),
     COURSE_MEDIS_NAMEISNULL(false,31102,"选择的媒资文件名称为空！");
 

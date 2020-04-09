@@ -94,10 +94,4 @@ public class FileSystemService {
         return null;
     }
 
-//    public static void main(String[] args) {
-//        String text = "";
-//
-//        Map map = JSON.parseObject(text, Map.class);
-//        System.out.println(map.toString());
-//    }
 }

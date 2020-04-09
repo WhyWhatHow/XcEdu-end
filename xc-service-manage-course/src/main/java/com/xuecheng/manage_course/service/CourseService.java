@@ -1,16 +1,14 @@
 package com.xuecheng.manage_course.service;
 
+import com.alibaba.fastjson.JSON;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.xuecheng.framework.domain.cms.CmsPage;
 import com.xuecheng.framework.domain.cms.response.CmsPageRemotePostResult;
 import com.xuecheng.framework.domain.cms.response.CmsPageResult;
+import com.xuecheng.framework.domain.course.*;
 import com.xuecheng.framework.domain.course.response.CoursePreviewResult;
 import com.xuecheng.framework.domain.course.response.CoursePublishResult;
-import com.xuecheng.framework.domain.course.CourseBase;
-import com.xuecheng.framework.domain.course.CourseMarket;
-import com.xuecheng.framework.domain.course.CoursePic;
-import com.xuecheng.framework.domain.course.Teachplan;
 import com.xuecheng.framework.domain.course.ext.CourseDetail;
 import com.xuecheng.framework.domain.course.ext.CourseInfo;
 import com.xuecheng.framework.domain.course.ext.TeachplanNode;
@@ -22,6 +20,7 @@ import com.xuecheng.framework.model.response.CommonCode;
 import com.xuecheng.framework.model.response.QueryResponseResult;
 import com.xuecheng.framework.model.response.QueryResult;
 import com.xuecheng.framework.model.response.ResponseResult;
+import com.xuecheng.framework.utils.TimeUtil;
 import com.xuecheng.manage_course.client.CmsPageClient;
 import com.xuecheng.manage_course.dao.*;
 import com.xuecheng.manage_course.mapper.TeachPlanMapper;
@@ -32,6 +31,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -205,7 +206,7 @@ public class CourseService {
             one.setPrice(market.getPrice());
             one.setQq(market.getQq());
             one.setValid(market.getValid());
-            marketRepository.save(one);
+//            marketRepository.save(one);
         } else {
             one = new CourseMarket();
             BeanUtils.copyProperties(market, one);
@@ -285,7 +286,6 @@ public class CourseService {
      * 1. 组成cmspage页面
      * 2, 调用远程方法保存cmsPage
      * 3. 返回页面预览url
-     *
      * @param courseId
      * @return 页面详情页预览的url
      */
@@ -303,7 +303,6 @@ public class CourseService {
 
     /**
      * 初始化cmsPage页面
-     *
      * @param courseId
      * @return
      */
@@ -312,9 +311,8 @@ public class CourseService {
         //                            4028e581617f945f01617f9dabc40000
         CmsPage page = new CmsPage();
         page.setPageName(courseId + ".html");
-
         page.setPageAliase(base.getName());
-        //      siteId: 5e800c8b83e280056463e674 # 站点id
+        //  siteId: 5e800c8b83e280056463e674 # 站点id
         page.setSiteId(publish_siteId);
         //  templateId: 5e7c64c99484362aa8210030 # 课程详情页面模板id
         page.setTemplateId(publish_templateId);
@@ -331,20 +329,26 @@ public class CourseService {
     @Autowired
     CmsPageClient pageClient;
 
+    @Autowired
+    CoursePubRepository coursePubRepository;
+
     /**
-     * 发布课程,
+     * 发布课程
      * 1, 准备cmspage 数据
      * 2. 调用cmspage.发布功能
      * 3. 修改页面信息, 加入elastic search index , 添加缓存文件
      * 4. 返回结果
-     *
      * @param courseId
      * @return
      */
     @Transactional
     public CoursePublishResult publishCourseDetail(String courseId) {
         CourseBase base = findCourseBaseByCourseId(courseId);
-        // 初始化请求cmsPage页面
+        if (base == null) {
+            // 排除课程不存在的情况
+            RuntimeExceptionCast.cast(CommonCode.FAIL);
+        }
+//         初始化请求cmsPage页面
         CmsPage page = initCmsPage(base, courseId);
         // 发送请求
         CmsPageRemotePostResult result = pageClient.postPage(page);
@@ -355,9 +359,43 @@ public class CourseService {
         // 跟新页面信息
         base.setStatus("202002");
         courseBaseRepository.save(base);
-        //// TODO: 2020/3/29   将 课程信息 加入到缓存中,索引中
+        //// Done: 2020/3/29   将 课程信息 加入到缓存中,索引中
+        CoursePub pub = saveCoursePub(base);
         return new CoursePublishResult(CommonCode.SUCCESS, url);
+    }
 
-
+    /**
+     * 1.  保存课程基本信息, 课程图片,课程教学计划, 课程市场计划到coursePub中
+     * @param base
+     * @return
+     */
+    private CoursePub saveCoursePub(CourseBase base) {
+        CoursePub pub = new CoursePub();
+        String id = base.getId();
+        //1  课程计划
+        Optional<CourseMarket> opt1 = marketRepository.findById(base.getId());
+        if (opt1.isPresent()) {
+            CourseMarket courseMarket = opt1.get();
+            BeanUtils.copyProperties(courseMarket, pub);
+        }
+        //2  处理课程教学计划
+        TeachplanNode teachPlanNode = this.getTeachPlanByCourseId(id);
+//        BeanUtils.copyProperties(teachPlanNode,pub);
+        if (teachPlanNode != null) {
+            String teachplan = JSON.toJSONString(teachPlanNode);
+            pub.setTeachplan(teachplan);
+        }
+        CoursePic coursePic = findCoursePicByCourseId(id);
+        if (coursePic != null) {
+            BeanUtils.copyProperties(coursePic, pub);
+        }
+        //  4 处理课程基本信息
+        BeanUtils.copyProperties(base, pub);
+        pub.setTimestamp(new Date()); // 用来让logstash更新数据
+        String date = TimeUtil.getNow();
+        pub.setPubTime(date);
+//        System.out.println(pub);
+        CoursePub save = coursePubRepository.save(pub);
+        return save;
     }
 }
