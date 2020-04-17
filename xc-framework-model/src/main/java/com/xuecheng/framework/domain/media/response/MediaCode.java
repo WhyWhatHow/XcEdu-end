@@ -13,9 +13,15 @@ import lombok.ToString;
 public enum MediaCode implements ResultCode {
     UPLOAD_FILE_REGISTER_FAIL(false,22001,"上传文件在系统注册失败，请刷新页面重试！"),
     UPLOAD_FILE_REGISTER_EXIST(false,22002,"上传文件在系统已存在！"),
-    CHUNK_FILE_EXIST_CHECK(true,22003,"分块文件在系统已存在！"),
-    MERGE_FILE_FAIL(false,22004,"合并文件失败，文件在系统已存在！"),
-    MERGE_FILE_CHECKFAIL(false,22005,"合并文件校验失败！");
+    UPLOAD_FILE_REGISTER_CREATE_FILEPATH_FAIL(false,22003,"上传文件失败,创建文件路径有误,请重试"),
+    UPLOAD_FILE_REGISTER_FILE_IS_NULL(false,22004,"上传文件不存在"),
+
+    CHUNK_FILE_EXIST_CHECK(true,22013,"分块文件在系统已存在！"),
+
+    CHECK_MD5_FAIL(false,22100,"合并文件校验MD5失败"),
+
+    MERGE_FILE_FAIL(false,22024,"合并文件失败，文件在系统已存在！"),
+    MERGE_FILE_CHECKFAIL(false,22025,"合并文件校验失败！");
 
     //操作代码
     @ApiModelProperty(value = "媒资系统操作是否成功", example = "true", required = true)
