@@ -1,6 +1,6 @@
 package com.xuecheng.manage_media.controller;
 
-import com.xuecheng.api.media.MediaFileUploadControllerApi;
+import com.xuecheng.api.media.UPloadMediaControllerApi;
 import com.xuecheng.framework.domain.media.response.CheckChunkResult;
 import com.xuecheng.framework.model.response.ResponseResult;
 import com.xuecheng.manage_media.service.UploadMediaService;
@@ -19,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
  **/
 @RestController
 @RequestMapping("/media/upload")
-public class MediaUploadController implements MediaFileUploadControllerApi {
+public class UPloadMediaUploadController implements UPloadMediaControllerApi {
     @Autowired
     UploadMediaService service;
 

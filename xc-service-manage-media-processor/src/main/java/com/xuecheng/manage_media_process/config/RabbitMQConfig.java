@@ -41,7 +41,7 @@ public class RabbitMQConfig {
     //声明队列
     @Bean("queue_media_video_processTask")
     public Queue QUEUE_PROCESSTASK() {
-        Queue queue = new Queue(queue_media_video_processTask, true, false, false);
+        Queue queue = new Queue(queue_media_video_processTask, true, false, true);
         return queue;
     }
 

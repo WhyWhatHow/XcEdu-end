@@ -12,4 +12,5 @@ import java.util.List;
 public interface TeachPlanRepository extends JpaRepository<Teachplan,String> {
 
         List<Teachplan> findByCourseidAndParentid(String courseId, String parentId);
+        Teachplan findByIdAndGrade(String id , String  grade);
 }

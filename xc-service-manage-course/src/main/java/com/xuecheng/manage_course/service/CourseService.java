@@ -3,6 +3,7 @@ package com.xuecheng.manage_course.service;
 import com.alibaba.fastjson.JSON;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
+import com.netflix.discovery.converters.Auto;
 import com.xuecheng.framework.domain.cms.CmsPage;
 import com.xuecheng.framework.domain.cms.response.CmsPageRemotePostResult;
 import com.xuecheng.framework.domain.cms.response.CmsPageResult;
@@ -68,7 +69,7 @@ public class CourseService {
             parentid = findTeachPlanIdInCourseByCourseId(courseid);
         }
         teachplan.setParentid(parentid);
-        // 设置节点的等级 ,TODO 貌似没有任何卵用, reason: 目前为止尚未用到过grade
+        // 设置节点的等级
         Optional<Teachplan> optional = teachPlanRepository.findById(parentid);
         if (!optional.isPresent()) {
             RuntimeExceptionCast.cast(CourseCode.COURSE_TEACHPLAN_ROOT_IS_NULL);
@@ -91,6 +92,11 @@ public class CourseService {
     @Autowired
     TeachPlanRepository teachPlanRepository;
 
+    /**
+     * 根据课程ID查询课程教学计划
+     * @param courseid
+     * @return
+     */
     String findTeachPlanIdInCourseByCourseId(String courseid) {
         Optional<CourseBase> opt = courseBaseRepository.findById(courseid);
         if (!opt.isPresent()) {
@@ -397,5 +403,39 @@ public class CourseService {
 //        System.out.println(pub);
         CoursePub save = coursePubRepository.save(pub);
         return save;
+    }
+
+
+    @Autowired
+    TeachPlanMediaRepository teachPlanMediaRepository;
+    /**
+     * 保存媒资信息  只有三级节点可以保存视频信息,其他节点不可以保存
+     * 1. 判断是否是三级节点
+     * 2 . 写入mysql,先查,有文档,则更新,无则插入
+     * @param teachplanMedia
+     * @return
+     */
+    @Transactional
+    public ResponseResult saveMedia(TeachplanMedia teachplanMedia) {
+        if (teachplanMedia==null) {
+            RuntimeExceptionCast.cast(CommonCode.INVALID_PARAM);
+        }
+        //1  判断是否是三级节点
+        Teachplan byIdAndGrade = teachPlanRepository.findByIdAndGrade(teachplanMedia.getTeachplanId(), "3");
+        if(byIdAndGrade ==null){
+            // 不存在
+            RuntimeExceptionCast.cast(CourseCode.COURSE_MEDIS_GRADE_ERROR);
+        }
+        // save mysql 中
+        Optional<TeachplanMedia> opt = teachPlanMediaRepository.findById(teachplanMedia.getTeachplanId());
+        if (opt.isPresent()) {
+            //  exist
+            TeachplanMedia before = opt.get();
+            BeanUtils.copyProperties(teachplanMedia,before);
+            TeachplanMedia save = teachPlanMediaRepository.save(before);
+        }else{
+            teachPlanMediaRepository.save(teachplanMedia);
+        }
+        return new ResponseResult(CommonCode.SUCCESS);
     }
 }

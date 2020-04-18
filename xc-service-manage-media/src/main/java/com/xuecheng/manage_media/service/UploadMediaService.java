@@ -328,4 +328,17 @@ public class UploadMediaService {
         return mergeFile;
 
     }
+
+    public ResponseResult processVideoFile(String fileMd5) {
+        if (StringUtils.isEmpty(fileMd5)) {
+            RuntimeExceptionCast.cast(CommonCode.INVALID_PARAM);
+        }
+        Optional<MediaFile> opt = repository.findById(fileMd5);
+        if(!opt.isPresent()){
+            RuntimeExceptionCast.cast(MediaCode.UPLOAD_FILE_REGISTER_FILE_IS_NULL);
+        }
+        MediaFile mediaFile = opt.get();
+        sendMessageToMQ(mediaFile);
+        return new ResponseResult(CommonCode.SUCCESS);
+    }
 }

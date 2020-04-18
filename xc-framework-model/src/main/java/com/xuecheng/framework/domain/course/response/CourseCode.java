@@ -24,6 +24,7 @@ public enum CourseCode implements ResultCode {
     COURSE_SEARCH_ERROR(false,34000,"课程查询失败"),
 
     COURSE_MEDIS_URLISNULL(false,31101,"选择的媒资文件访问地址为空！"),
+    COURSE_MEDIS_GRADE_ERROR(false,31103,"视频文件智能与三级节点想绑定,不可以与其他节点绑定"),
     COURSE_MEDIS_NAMEISNULL(false,31102,"选择的媒资文件名称为空！");
 
 

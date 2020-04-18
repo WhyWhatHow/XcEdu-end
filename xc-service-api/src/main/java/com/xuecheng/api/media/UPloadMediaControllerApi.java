@@ -14,7 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
  * @create: 2020-04-17 12:23
  **/
 @Api("媒资文件上传接口")
-public interface MediaFileUploadControllerApi {
+public interface UPloadMediaControllerApi {
 
     @ApiOperation("文件注册,校验文件目录是否已经存在等对应前端的webUploader.before-send-file")
     public ResponseResult register(String fileMd5, String fileName, Long fileSize, String fileType, String fileExt);

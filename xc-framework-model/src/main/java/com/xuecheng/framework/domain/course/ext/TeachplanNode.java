@@ -14,5 +14,11 @@ import java.util.List;
 public class TeachplanNode extends Teachplan {
 
     List<TeachplanNode> children;
+    //媒资信息
+    private String mediaId;
+    private String mediaFileOriginalName;
+
+
+    private String mediaUrl; // 媒资文件的相对地址
 
 }
