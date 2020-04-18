@@ -8,10 +8,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.naming.ldap.SortKey;
 import java.io.*;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 /**
  * @program: XcEduCode
@@ -176,4 +173,48 @@ public class TestFileUpload {
 //        while ((len=writer.write(buf)!=-1))
     }
 
+    @Test
+    public void testFFMpeg(){
+        ProcessBuilder processBuilder = new ProcessBuilder();
+    //定义命令内容
+        List<String> command = new ArrayList<>();
+        command.add("D:\\FFmpeg\\ffmpeg-20180227-fa0c9d6-win64-static\\bin\\ffmpeg.exe");
+        command.add("-i");
+        command.add("D:\\FFmpeg\\test\\1.avi");
+        command.add("-y");//覆盖输出文件
+        command.add("-c:v");
+        command.add("libx264");
+        command.add("-s");
+        command.add("1280x720");
+        command.add("-pix_fmt");
+        command.add("yuv420p");
+        command.add("-b:a");
+        command.add("63k");
+        command.add("-b:v");
+        command.add("753k");
+        command.add("-r");
+        command.add("20");
+        command.add("D:\\FFmpeg\\test\\1.mp4");
+        processBuilder.command(command);
+        processBuilder.redirectErrorStream(true);
+        try {
+            Process process = processBuilder.start();
+            InputStream inputStream = process.getInputStream();
+            InputStreamReader reader = new InputStreamReader(inputStream,"gbk");
+            StringBuffer stringBuffer =new StringBuffer();
+            int len = -1 ;
+            char[] buf = new char[1024];
+            while((len = reader.read(buf))!=-1){
+//            String ss = new String();
+                stringBuffer.append(buf);
+            }
+            System.out.println(stringBuffer.toString());
+//        while(inputStreamReader.read(, , ))
+            System.out.println("===================================");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
 }

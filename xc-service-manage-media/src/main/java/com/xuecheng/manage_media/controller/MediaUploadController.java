@@ -3,7 +3,7 @@ package com.xuecheng.manage_media.controller;
 import com.xuecheng.api.media.MediaFileUploadControllerApi;
 import com.xuecheng.framework.domain.media.response.CheckChunkResult;
 import com.xuecheng.framework.model.response.ResponseResult;
-import com.xuecheng.manage_media.service.MediaUploadService;
+import com.xuecheng.manage_media.service.UploadMediaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/media/upload")
 public class MediaUploadController implements MediaFileUploadControllerApi {
     @Autowired
-    MediaUploadService service;
+    UploadMediaService service;
 
     @Override
     @PostMapping("/register")

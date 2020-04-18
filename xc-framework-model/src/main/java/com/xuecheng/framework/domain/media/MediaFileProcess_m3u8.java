@@ -1,6 +1,7 @@
 package com.xuecheng.framework.domain.media;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.util.List;
@@ -13,9 +14,13 @@ import java.util.List;
  */
 @Data
 @ToString
+@NoArgsConstructor
 public class MediaFileProcess_m3u8 extends MediaFileProcess {
 
     //ts列表
-    private List<String> tslist;
+    private List<String> tsList;
 
+   public  MediaFileProcess_m3u8( List<String> list){
+       tsList= list ;
+   }
 }

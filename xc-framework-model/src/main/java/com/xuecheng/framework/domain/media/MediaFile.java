@@ -35,7 +35,10 @@ public class MediaFile {
     private String fileStatus;
     //上传时间
     private Date uploadTime;
-    //处理状态
+//    处理状态   303001   "处理中",
+//              303002    处理成功"
+//              303003    处理失败
+//              303004    无需处理
     private String processStatus;
     //hls处理
     private MediaFileProcess_m3u8 mediaFileProcess_m3u8;

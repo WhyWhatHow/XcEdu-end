@@ -1,17 +1,20 @@
 package com.xuecheng.manage_media.service;
 
+import com.alibaba.fastjson.JSON;
 import com.xuecheng.framework.domain.media.MediaFile;
 import com.xuecheng.framework.domain.media.response.CheckChunkResult;
 import com.xuecheng.framework.domain.media.response.MediaCode;
 import com.xuecheng.framework.exception.RuntimeExceptionCast;
 import com.xuecheng.framework.model.response.CommonCode;
 import com.xuecheng.framework.model.response.ResponseResult;
+import com.xuecheng.manage_media.config.RabbitMQConfig;
 import com.xuecheng.manage_media.dao.MediaFileRepository;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -29,13 +32,20 @@ import java.util.Optional;
  * @create: 2020-04-17 12:37
  **/
 @Service
-public class MediaUploadService {
-    public static Logger logger = LoggerFactory.getLogger(Exception.class);
+public class UploadMediaService {
+    public static Logger logger = LoggerFactory.getLogger(UploadMediaService.class);
     @Autowired
     MediaFileRepository repository;
 
     @Value("${xc-service-manage-media.upload-location}")
     String uploadLocation;// 文件上传路径
+
+    @Value("${xc-service-manage-media.mq.routingkey-media-video}")
+    String routingKey;
+
+
+    @Autowired
+    RabbitTemplate rabbitTemplate;
 
     /**
      * 获取文件路径
@@ -53,19 +63,21 @@ public class MediaUploadService {
                 append(fileMd5.substring(0, 1)).
                 append("/").
                 append(fileMd5.substring(1, 2))
-                .append("/").append(fileMd5.substring(2)).append(".").append(fileExt);
+                .append("/").append(fileMd5.substring(2)).append("/").append(fileMd5).append(".").append(fileExt);
+
         return buffer.toString();
     }
 
     // 返回文件相对路径
-    private String getFileRelativePath(String fileMd5, String fileExt) {
-        String relationPath = fileMd5.substring(0, 1) + "/" + fileMd5.substring(1, 2) + "/" + fileMd5.substring(2) + "." + fileExt;
+    private String getFileRelativePath(String fileMd5) {
+        String relationPath = fileMd5.substring(0, 1) + "/" + fileMd5.substring(1, 2) + "/"+fileMd5.substring(2)+"/";
         return relationPath;
     }
 
     // 返回文件目录
     private String getFileFolder(String fileMd5) {
-        String fileFolder = uploadLocation + "/" + fileMd5.substring(0, 1) + "/" + fileMd5.substring(1, 2) + "/";
+        String fileFolder = uploadLocation + "/" + fileMd5.substring(0, 1) + "/" + fileMd5.substring(1, 2) + "/" + fileMd5.substring(2)+"/";
+
         return fileFolder;
     }
 
@@ -87,7 +99,8 @@ public class MediaUploadService {
      * @param fileMd5 根据文件的md5获取文件的路径
      *                md5 第一个字符 一级目录
      *                md5 第2个字符   2级目录
-     *                md5 余下字符    文件名
+     *                md5 余下字符    3及目录
+     *                md5 +ext = 文件名
      * @param fileExt 文件扩展名
      * @return
      */
@@ -164,7 +177,7 @@ public class MediaUploadService {
             IOUtils.copy(inputStream, outputStream);
         } catch (IOException e) {
             e.printStackTrace();
-            logger.error("upload chunk file fail",e.getMessage());
+            logger.error("upload chunk file fail", e.getMessage());
         } finally {
             try {
                 inputStream.close();
@@ -190,6 +203,7 @@ public class MediaUploadService {
      * 合并文件
      * 校验文件md5是否正确
      * 向Mongodb写入文件信息
+     * 合并文件成功,想mq发消息
      *
      * @param fileMd5
      * @param fileName
@@ -209,7 +223,7 @@ public class MediaUploadService {
                 newFile = mergeFile.createNewFile();
             } catch (IOException e) {
                 e.printStackTrace();
-                logger.error("create new file error in merge chunk file",e.getMessage());
+                logger.error("create new file error in merge chunk file", e.getMessage());
             }
         }
         if (!newFile) {
@@ -228,22 +242,46 @@ public class MediaUploadService {
         if (!checkMd5) {
             RuntimeExceptionCast.cast(MediaCode.MERGE_FILE_FAIL);
         }
-        // 5 保存到 mongoDB中
+        // 5 创建media病 保存到 mongoDB中
+        MediaFile mediaFile = createMediaFile(fileMd5, fileName, fileSize, fileType, fileExt);
+        mediaFile = repository.save(mediaFile);
+        // 6 向MQ发消息,MQ监听到后处理消息
+        sendMessageToMQ(mediaFile);
+
+        return new ResponseResult(CommonCode.SUCCESS);
+    }
+
+    // // TODO: 2020/4/18  向MQ发送消息 done
+    private void sendMessageToMQ(MediaFile file) {
+        String fileId = file.getFileId();
+        if (file == null || StringUtils.isEmpty(fileId)) {
+            RuntimeExceptionCast.cast(MediaCode.SEND_MESSAGE_ERROR);
+        }
+        Optional<MediaFile> opt = repository.findById(fileId);
+        if (opt.isPresent()) {
+            MediaFile mediaFile = opt.get();
+            String msg = JSON.toJSONString(mediaFile);
+            rabbitTemplate.convertAndSend(RabbitMQConfig.EX_MEDIA_PROCESSTASK, routingKey, msg);
+        }
+
+    }
+
+    // 生成 mediaFile 为保存到 mongodb中做准备
+    private MediaFile createMediaFile(String fileMd5, String fileName, Long fileSize, String fileType, String fileExt) {
         //将文件信息保存到数据库
         MediaFile mediaFile = new MediaFile();
         mediaFile.setFileId(fileMd5);
-        mediaFile.setFileName(fileMd5+"."+fileExt);
+        mediaFile.setFileName(fileMd5 + "." + fileExt);
         mediaFile.setFileOriginalName(fileName);
         //文件路径保存相对路径
-        mediaFile.setFilePath(getFileRelativePath(fileMd5,fileExt));
+        mediaFile.setFilePath(getFileRelativePath(fileMd5));
         mediaFile.setFileSize(fileSize);
         mediaFile.setUploadTime(new Date());
         mediaFile.setMimeType(fileType);
         mediaFile.setFileType(fileExt);
         //状态为上传成功
         mediaFile.setFileStatus("301002");
-        MediaFile save = repository.save(mediaFile);
-        return new ResponseResult(CommonCode.SUCCESS);
+        return mediaFile;
     }
 
     // 校验文件的md5
@@ -255,9 +293,9 @@ public class MediaUploadService {
         try {
             FileInputStream inputStream = new FileInputStream(mergeFile);
             String mergeFileMd5 = DigestUtils.md5Hex(inputStream);
-            res  = mergeFileMd5.equalsIgnoreCase(fileMd5);
+            res = mergeFileMd5.equalsIgnoreCase(fileMd5);
         } catch (Exception e) {
-            logger.error("get mergeFile md5 Error",e.getMessage());
+            logger.error("get mergeFile md5 Error", e.getMessage());
             e.printStackTrace();
         }
         return res;

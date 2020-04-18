@@ -20,6 +20,13 @@ public enum MediaCode implements ResultCode {
 
     CHECK_MD5_FAIL(false,22100,"合并文件校验MD5失败"),
 
+    SEND_MESSAGE_ERROR(false,22200,"发送消息失败,fileId=null"),
+
+    RECEIVE_MESSAGE_ERROR(false ,22201,"接收到消息,消息为空,请重新发送"),
+
+    VIDEO_M3U8_ERROR(false,22300,"生成视频m3u8错误"),
+    VIDEO_MP4_ERROR(false,223001,"转换视频mp4出错"),
+
     MERGE_FILE_FAIL(false,22024,"合并文件失败，文件在系统已存在！"),
     MERGE_FILE_CHECKFAIL(false,22025,"合并文件校验失败！");
 

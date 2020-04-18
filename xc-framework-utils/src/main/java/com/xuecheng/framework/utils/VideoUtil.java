@@ -19,7 +19,14 @@ public class VideoUtil {
     }
 
 
-    //检查视频时间是否一致
+    //
+
+    /**
+     *检查视频时间是否一致  , 绝对路径
+     * @param source 原视频
+     * @param target 生成后视频名称
+     * @return
+     */
     public Boolean check_video_time(String source,String target) {
         String source_time = get_video_time(source);
         //取出时分秒
