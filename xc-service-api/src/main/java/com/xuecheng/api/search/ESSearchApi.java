@@ -1,6 +1,7 @@
 package com.xuecheng.api.search;
 
 import com.xuecheng.framework.domain.course.CoursePub;
+import com.xuecheng.framework.domain.course.TeachplanMediaPub;
 import com.xuecheng.framework.domain.search.CourseSearchParam;
 import com.xuecheng.framework.model.response.QueryResponseResult;
 import com.xuecheng.framework.model.response.ResponseResult;
@@ -22,7 +23,9 @@ public interface ESSearchApi {
     public QueryResponseResult searchCourse(int page , int size
      , CourseSearchParam param);
 
-    @ApiOperation("根据ID查询课程的详细信息")
+    @ApiOperation("根据课程ID查询课程的详细信息")
     public Map<String,CoursePub> getAll(String id );
 
+    @ApiOperation("根据教学计划ID查询教案视频连接")
+    public TeachplanMediaPub findTeachPlanMediaPubByID(String id);
 }

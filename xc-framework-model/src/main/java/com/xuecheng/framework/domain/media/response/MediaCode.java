@@ -24,6 +24,8 @@ public enum MediaCode implements ResultCode {
 
     RECEIVE_MESSAGE_ERROR(false ,22201,"接收到消息,消息为空,请重新发送"),
 
+    SEARCH_MEDIA_ERROR(false,22300,"查询课程媒资信息失败,请重试"),
+
     VIDEO_M3U8_ERROR(false,22300,"生成视频m3u8错误"),
     VIDEO_MP4_ERROR(false,223001,"转换视频mp4出错"),
 
