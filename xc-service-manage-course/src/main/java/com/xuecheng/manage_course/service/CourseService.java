@@ -16,6 +16,7 @@ import com.xuecheng.framework.domain.course.ext.TeachplanNode;
 import com.xuecheng.framework.domain.course.request.CourseListRequest;
 import com.xuecheng.framework.domain.course.response.AddCourseResult;
 import com.xuecheng.framework.domain.course.response.CourseCode;
+import com.xuecheng.framework.domain.media.response.MediaCode;
 import com.xuecheng.framework.exception.RuntimeExceptionCast;
 import com.xuecheng.framework.model.response.CommonCode;
 import com.xuecheng.framework.model.response.QueryResponseResult;
@@ -94,6 +95,7 @@ public class CourseService {
 
     /**
      * 根据课程ID查询课程教学计划
+     *
      * @param courseid
      * @return
      */
@@ -295,42 +297,43 @@ public class CourseService {
      * @param courseId
      * @return 页面详情页预览的url
      */
-    public CoursePreviewResult previewCourseDetail(String courseId) {
-        CourseBase base = findCourseBaseByCourseId(courseId);
-        CmsPage page = initCmsPage(base, courseId);
-        CmsPageResult result = pageClient.savePage(page);
-        if (!result.isSuccess()) {
-            RuntimeExceptionCast.cast(CourseCode.COURSE_PUBLISH_VIEWERROR);
-        }
-        CmsPage downloadPage = result.getCmsPage();
-        String url = previewUrl + downloadPage.getPageId();
-        return new CoursePreviewResult(CommonCode.SUCCESS, url);
-    }
+//    public CoursePreviewResult previewCourseDetail(String courseId) {
+//        CourseBase base = findCourseBaseByCourseId(courseId);
+//        CmsPage page = initCmsPage(base, courseId);
+//        CmsPageResult result = pageClient.savePage(page);
+//        if (!result.isSuccess()) {
+//            RuntimeExceptionCast.cast(CourseCode.COURSE_PUBLISH_VIEWERROR);
+//        }
+//        CmsPage downloadPage = result.getCmsPage();
+//        String url = previewUrl + downloadPage.getPageId();
+//        return new CoursePreviewResult(CommonCode.SUCCESS, url);
+//    }
 
     /**
      * 初始化cmsPage页面
+     *
      * @param courseId
      * @return
      */
-    private CmsPage initCmsPage(CourseBase base, String courseId) {
-        // 组成cmsPage页面信息 pageId: 4028e581617f945f01617f9dabc40000
-        //                            4028e581617f945f01617f9dabc40000
-        CmsPage page = new CmsPage();
-        page.setPageName(courseId + ".html");
-        page.setPageAliase(base.getName());
-        //  siteId: 5e800c8b83e280056463e674 # 站点id
-        page.setSiteId(publish_siteId);
-        //  templateId: 5e7c64c99484362aa8210030 # 课程详情页面模板id
-        page.setTemplateId(publish_templateId);
-        //  pageWebPath: /course/detail/
-        page.setPageWebPath(publish_page_webpath);
-        //  pagePhysicalPath: /course/detail/
-        page.setPagePhysicalPath(publish_page_physicalpath);
-        //  dataUrlPre: http://localhost:31200/course/courseview/
-        page.setDataUrl(publish_dataUrlPre + courseId);
-        //  previewUrl: http://www.xuecheng.com/cms/preview/
-        return page;
-    }
+//    private CmsPage initCmsPage(CourseBase base, String courseId) {
+//        // 组成cmsPage页面信息 pageId: 4028e581617f945f01617f9dabc40000
+//        //                            4028e581617f945f01617f9dabc40000
+//        CmsPage page = new CmsPage();
+//        page.setPageName(courseId + ".html");
+//        page.setPageAliase(base.getName());
+//        //  siteId: 5e800c8b83e280056463e674 # 站点id
+//        page.setSiteId(publish_siteId);
+//        //  templateId: 5e7c64c99484362aa8210030 # 课程详情页面模板id
+//        page.setTemplateId(publish_templateId);
+//        //  pageWebPath: /course/detail/
+//        page.setPageWebPath(publish_page_webpath);
+//        //  pagePhysicalPath: /course/detail/
+//        page.setPagePhysicalPath(publish_page_physicalpath);
+//        //  dataUrlPre: http://localhost:31200/course/courseview/
+//        page.setDataUrl(publish_dataUrlPre + courseId);
+//        //  previewUrl: http://www.xuecheng.com/cms/preview/
+//        return page;
+//    }
 
     @Autowired
     CmsPageClient pageClient;
@@ -342,87 +345,124 @@ public class CourseService {
      * 发布课程
      * 1, 准备cmspage 数据
      * 2. 调用cmspage.发布功能
-     * 3. 修改页面信息, 加入elastic search index , 添加缓存文件
-     * 4. 返回结果
+     * 3. 修改页面信息,
+     * 4. 向 elastic search 添加索引
+     * course_pub : 课程页面查询使用
+     * course_media_pub: 课程媒资信息锁芯
+     * 5. 返回结果
+     *
      * @param courseId
      * @return
      */
-    @Transactional
-    public CoursePublishResult publishCourseDetail(String courseId) {
-        CourseBase base = findCourseBaseByCourseId(courseId);
-        if (base == null) {
-            // 排除课程不存在的情况
-            RuntimeExceptionCast.cast(CommonCode.FAIL);
-        }
-//         初始化请求cmsPage页面
-        CmsPage page = initCmsPage(base, courseId);
-        // 发送请求
-        CmsPageRemotePostResult result = pageClient.postPage(page);
-        if (!result.isSuccess()) {
-            RuntimeExceptionCast.cast(CommonCode.FAIL);
-        }
-        String url = result.getUrl();
-        // 跟新页面信息
-        base.setStatus("202002");
-        courseBaseRepository.save(base);
-        //// Done: 2020/3/29   将 课程信息 加入到缓存中,索引中
-        CoursePub pub = saveCoursePub(base);
-        return new CoursePublishResult(CommonCode.SUCCESS, url);
-    }
+//    @Transactional
+//    public CoursePublishResult publishCourseDetail(String courseId) {
+//        CourseBase base = findCourseBaseByCourseId(courseId);
+//        if (base == null) {
+//            // 排除课程不存在的情况
+//            RuntimeExceptionCast.cast(CommonCode.FAIL);
+//        }
+////         初始化请求cmsPage页面
+//        CmsPage page = initCmsPage(base, courseId);
+//        // 发送请求
+//        CmsPageRemotePostResult result = pageClient.postPage(page);
+//        if (!result.isSuccess()) {
+//            RuntimeExceptionCast.cast(CommonCode.FAIL);
+//        }
+//        String url = result.getUrl();
+//        // 跟新页面信息
+//        base.setStatus("202002");
+//        courseBaseRepository.save(base);
+//        //// Done: 2020/3/29   将 课程信息 加入到缓存中,索引中
+//        CoursePub pub = saveCoursePub(base);
+//        // 保存课程的媒资信息,并加入es 索引库中
+//        saveCourseMediaByCourseId(courseId);
+//
+//        return new CoursePublishResult(CommonCode.SUCCESS, url);
+//    }
+
+    @Autowired
+    TeachPlanMediaPubRepository teachPlanMediaPubRepository;
+
+    /**
+     * 根据课程id 保存课程的媒资信息, course :teachplan = 1:n
+     * teachplan_meida : save 查询
+     * teachplan_meida_pub: show   delete -> save
+     * @param courseId 课程id
+     */
+//    private void saveCourseMediaByCourseId(String courseId) {
+//        List<TeachplanMedia> list = teachPlanMediaRepository.findByCourseId(courseId);
+//        if (list == null || list.size() == 0) {
+//            RuntimeExceptionCast.cast(CommonCode.INVALID_PARAM);
+//        }
+//        // delete media_pub already exist
+//        long l = teachPlanMediaPubRepository.deleteByCourseId(courseId);
+//        if (l == 0) {
+//            RuntimeExceptionCast.cast(CommonCode.INVALID_PARAM);
+//        }
+//        for (TeachplanMedia media : list) {
+//            TeachplanMediaPub pub = new TeachplanMediaPub();
+//            BeanUtils.copyProperties(media, pub);
+//            pub.setTimestamp(new Date());
+//            System.out.println(pub);
+//            teachPlanMediaPubRepository.save(pub);
+//        }
+//    }
 
     /**
      * 1.  保存课程基本信息, 课程图片,课程教学计划, 课程市场计划到coursePub中
      * @param base
      * @return
      */
-    private CoursePub saveCoursePub(CourseBase base) {
-        CoursePub pub = new CoursePub();
-        String id = base.getId();
-        //1  课程计划
-        Optional<CourseMarket> opt1 = marketRepository.findById(base.getId());
-        if (opt1.isPresent()) {
-            CourseMarket courseMarket = opt1.get();
-            BeanUtils.copyProperties(courseMarket, pub);
-        }
-        //2  处理课程教学计划
-        TeachplanNode teachPlanNode = this.getTeachPlanByCourseId(id);
-//        BeanUtils.copyProperties(teachPlanNode,pub);
-        if (teachPlanNode != null) {
-            String teachplan = JSON.toJSONString(teachPlanNode);
-            pub.setTeachplan(teachplan);
-        }
-        CoursePic coursePic = findCoursePicByCourseId(id);
-        if (coursePic != null) {
-            BeanUtils.copyProperties(coursePic, pub);
-        }
-        //  4 处理课程基本信息
-        BeanUtils.copyProperties(base, pub);
-        pub.setTimestamp(new Date()); // 用来让logstash更新数据
-        String date = TimeUtil.getNow();
-        pub.setPubTime(date);
-//        System.out.println(pub);
-        CoursePub save = coursePubRepository.save(pub);
-        return save;
-    }
+//    private CoursePub saveCoursePub(CourseBase base) {
+//        CoursePub pub = new CoursePub();
+//        String id = base.getId();
+//        //1  课程计划
+//        Optional<CourseMarket> opt1 = marketRepository.findById(base.getId());
+//        if (opt1.isPresent()) {
+//            CourseMarket courseMarket = opt1.get();
+//            BeanUtils.copyProperties(courseMarket, pub);
+//        }
+//        //2  处理课程教学计划
+//        TeachplanNode teachPlanNode = this.getTeachPlanByCourseId(id);
+////        BeanUtils.copyProperties(teachPlanNode,pub);
+//        if (teachPlanNode != null) {
+//            String teachplan = JSON.toJSONString(teachPlanNode);
+//            pub.setTeachplan(teachplan);
+//        }
+//        CoursePic coursePic = findCoursePicByCourseId(id);
+//        if (coursePic != null) {
+//            BeanUtils.copyProperties(coursePic, pub);
+//        }
+//        //  4 处理课程基本信息
+//        BeanUtils.copyProperties(base, pub);
+//        pub.setTimestamp(new Date()); // 用来让logstash更新数据
+//        String date = TimeUtil.getNow();
+//        pub.setPubTime(date);
+////        System.out.println(pub);
+//        CoursePub save = coursePubRepository.save(pub);
+//        return save;
+//    }
 
 
     @Autowired
     TeachPlanMediaRepository teachPlanMediaRepository;
+
     /**
      * 保存媒资信息  只有三级节点可以保存视频信息,其他节点不可以保存
      * 1. 判断是否是三级节点
      * 2 . 写入mysql,先查,有文档,则更新,无则插入
+     *
      * @param teachplanMedia
      * @return
      */
     @Transactional
     public ResponseResult saveMedia(TeachplanMedia teachplanMedia) {
-        if (teachplanMedia==null) {
+        if (teachplanMedia == null) {
             RuntimeExceptionCast.cast(CommonCode.INVALID_PARAM);
         }
         //1  判断是否是三级节点
         Teachplan byIdAndGrade = teachPlanRepository.findByIdAndGrade(teachplanMedia.getTeachplanId(), "3");
-        if(byIdAndGrade ==null){
+        if (byIdAndGrade == null) {
             // 不存在
             RuntimeExceptionCast.cast(CourseCode.COURSE_MEDIS_GRADE_ERROR);
         }
@@ -431,9 +471,9 @@ public class CourseService {
         if (opt.isPresent()) {
             //  exist
             TeachplanMedia before = opt.get();
-            BeanUtils.copyProperties(teachplanMedia,before);
+            BeanUtils.copyProperties(teachplanMedia, before);
             TeachplanMedia save = teachPlanMediaRepository.save(before);
-        }else{
+        } else {
             teachPlanMediaRepository.save(teachplanMedia);
         }
         return new ResponseResult(CommonCode.SUCCESS);

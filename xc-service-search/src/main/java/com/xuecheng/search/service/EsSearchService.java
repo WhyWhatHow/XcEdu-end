@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -72,8 +73,7 @@ public class EsSearchService {
         if (param == null) {
             param = new CourseSearchParam();
         }
-        SearchRequest request = new SearchRequest(index);
-        request.types(type);
+        SearchRequest request = getSearchRequest();
         // 1 设置查询条件,过滤条件,高亮
         SearchSourceBuilder builder = setSearchSourceBuilder(param);
         // 2 设置分页
@@ -159,7 +159,7 @@ public class EsSearchService {
             // st 小分类
             String st = (String) map.get("st");
             pub.setSt(st);
-           // charge // 收费规则
+            // charge // 收费规则
             String charge = (String) map.get("charge");
             pub.setCharge(charge);
             // price
@@ -228,5 +228,54 @@ public class EsSearchService {
             this.from = (page - 1) * size;
             this.size = size;
         }
+    }
+
+    /**
+     * 根据课程id 查询课程发布信息
+     *
+     * @param id
+     * @return
+     */
+    public Map<String, CoursePub> getAll(String id) {
+        // 获取searchrequest. 并配置基本项
+        SearchRequest request = getSearchRequest();
+        SearchSourceBuilder builder = new SearchSourceBuilder();
+        builder.query(QueryBuilders.termQuery("id", id));
+        request.source(builder);
+        Map<String,CoursePub> resMap = new HashMap<>();
+        try {
+            SearchResponse response = client.search(request);
+            SearchHits hits = response.getHits();
+            SearchHit[] hits1 = hits.getHits();
+
+            for (SearchHit hit : hits1) {
+                Map<String, Object> map = hit.getSourceAsMap();
+                System.out.println(map.toString());
+                String courseId = (String) map.get("id");
+                String name = (String) map.get("name");
+                String grade = (String) map.get("grade");
+                String charge = (String) map.get("charge");
+                String pic = (String) map.get("pic");
+                String description = (String) map.get("description");
+                String teachplan = (String) map.get("teachplan");
+                CoursePub coursePub = new CoursePub();
+                coursePub.setId(courseId);
+                coursePub.setName(name);
+                coursePub.setPic(pic);
+                coursePub.setGrade(grade);
+                coursePub.setTeachplan(teachplan);
+                coursePub.setDescription(description);
+                resMap.put(courseId,coursePub);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return resMap;
+    }
+
+    private SearchRequest getSearchRequest() {
+        SearchRequest request = new SearchRequest(index);
+        request.types(type);
+        return request;
     }
 }

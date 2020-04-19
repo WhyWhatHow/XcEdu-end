@@ -12,6 +12,8 @@ public class ElasticsearchConfig {
 
     @Value("${xuecheng.elasticsearch.hostlist}")
     private String hostlist;
+    @Value("${server.port}")
+    private String port ;
 
     @Bean
     public RestHighLevelClient restHighLevelClient(){

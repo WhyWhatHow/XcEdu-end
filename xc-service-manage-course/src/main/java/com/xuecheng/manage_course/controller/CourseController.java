@@ -11,6 +11,7 @@ import com.xuecheng.framework.domain.course.response.AddCourseResult;
 import com.xuecheng.framework.model.response.CommonCode;
 import com.xuecheng.framework.model.response.QueryResponseResult;
 import com.xuecheng.framework.model.response.ResponseResult;
+import com.xuecheng.manage_course.service.CoursePublishService;
 import com.xuecheng.manage_course.service.CourseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +29,8 @@ public class CourseController implements CourseControllerApi {
     @Autowired
     CourseService service;
 
+    @Autowired
+    CoursePublishService publishService;
     @Override
     @GetMapping("/teachplan/list/{id}")
     public TeachplanNode findTeachPlanByCourseId(@PathVariable("id") String id) {
@@ -111,14 +114,16 @@ public class CourseController implements CourseControllerApi {
     @Override
     @GetMapping("/preview/{id}")
     public CoursePreviewResult previewCourseDetail(@PathVariable("id") String courseId) {
-        return service.previewCourseDetail(courseId);
+//        return service.previewCourseDetail(courseId);
+        return publishService.previewCourseDetail(courseId);
     }
 
     @Override
     @GetMapping("/publish/{id}")
     public CoursePublishResult publishCourse(@PathVariable("id") String courseId) {
-        return service.publishCourseDetail(courseId);
-   }
+//        return service.publishCourseDetail(courseId);
+    return publishService.publishCourseDetail(courseId);
+    }
 
     @Override
     @PostMapping("/savemedia")

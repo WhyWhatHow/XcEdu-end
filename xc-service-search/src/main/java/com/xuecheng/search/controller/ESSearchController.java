@@ -1,6 +1,7 @@
 package com.xuecheng.search.controller;
 
 import com.xuecheng.api.search.ESSearchApi;
+import com.xuecheng.framework.domain.course.CoursePub;
 import com.xuecheng.framework.domain.search.CourseSearchParam;
 import com.xuecheng.framework.model.response.QueryResponseResult;
 import com.xuecheng.search.service.EsSearchService;
@@ -9,6 +10,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 /**
  * @program: XcEduCode
@@ -26,5 +29,12 @@ public class ESSearchController implements ESSearchApi {
     public QueryResponseResult searchCourse(@PathVariable("page") int page,@PathVariable("size") int size, CourseSearchParam param) {
 //        return null;
         return service.searchCourse(page,size,param);
+    }
+
+    @Override
+    @GetMapping("/getall/{id}")
+    public Map<String, CoursePub> getAll(@PathVariable("id") String id) {
+//        return null;
+        return service.getAll(id);
     }
 }

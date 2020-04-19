@@ -8,6 +8,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 
 import javax.naming.directory.SearchResult;
+import java.util.Map;
 
 /**
  * @program: XcEduCode
@@ -20,5 +21,8 @@ public interface ESSearchApi {
     @ApiOperation("课程查询, ES index")
     public QueryResponseResult searchCourse(int page , int size
      , CourseSearchParam param);
+
+    @ApiOperation("根据ID查询课程的详细信息")
+    public Map<String,CoursePub> getAll(String id );
 
 }

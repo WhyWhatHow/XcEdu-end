@@ -1,5 +1,6 @@
 package com.xuecheng.manage_course;
 
+import com.xuecheng.manage_course.service.CoursePublishService;
 import com.xuecheng.manage_course.service.CourseService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,7 +18,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith(SpringRunner.class)
 public class TestCoursePublish {
     @Autowired
-    CourseService service;
+    CoursePublishService service;
     @Test
     public  void test(){
         String id = "4028e581617f945f01617f9dabc40000";
