@@ -46,6 +46,8 @@ ribbon:
   ConnectTimeout: 5000  #请求连接的超时时间
   ReadTimeout: 6000 #请求处理的超时时间
 
+
+
 # 用户注入属性
 course-publish:
   siteId: 5e800c8b83e280056463e674 # 站点id

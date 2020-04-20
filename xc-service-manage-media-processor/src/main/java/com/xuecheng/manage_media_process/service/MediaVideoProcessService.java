@@ -118,7 +118,8 @@ public class MediaVideoProcessService {
         process_m3u8.setTsList(list);
         mediaFile.setMediaFileProcess_m3u8(process_m3u8);
         mediaFile.setProcessStatus("303002");//处理成功
-        mediaFile.setFileUrl(mediaFile.getFilePath()+"hls/"+mediaFile.getFileName());
+        // 文件url
+        mediaFile.setFileUrl(mediaFile.getFilePath()+"hls/"+m3u8Name);
         repository.save(mediaFile);
     }
 

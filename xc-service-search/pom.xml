@@ -68,6 +68,11 @@
             <version>2.1.9.RELEASE</version>
             <scope>compile</scope>
         </dependency>
+        <!-- 导入Eureka客户端的依赖 -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
     </dependencies>
 
 </project>
