@@ -11,8 +11,8 @@ import lombok.ToString;
 @ToString
 public class LoginRequest extends RequestData {
 
-    String username;
-    String password;
-    String verifycode;
+    String username;// 用户名
+    String password; // 密码
+    String verifycode;// 验证码
 
 }

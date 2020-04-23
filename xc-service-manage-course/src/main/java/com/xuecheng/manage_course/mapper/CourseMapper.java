@@ -1,4 +1,4 @@
-package com.xuecheng.manage_course.dao;
+package com.xuecheng.manage_course.mapper;
 
 import com.github.pagehelper.Page;
 import com.xuecheng.framework.domain.course.CourseBase;

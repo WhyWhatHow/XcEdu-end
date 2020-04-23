@@ -1,30 +1,22 @@
 package com.xuecheng.manage_course.service;
 
-import com.alibaba.fastjson.JSON;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
-import com.netflix.discovery.converters.Auto;
-import com.xuecheng.framework.domain.cms.CmsPage;
-import com.xuecheng.framework.domain.cms.response.CmsPageRemotePostResult;
-import com.xuecheng.framework.domain.cms.response.CmsPageResult;
 import com.xuecheng.framework.domain.course.*;
-import com.xuecheng.framework.domain.course.response.CoursePreviewResult;
-import com.xuecheng.framework.domain.course.response.CoursePublishResult;
 import com.xuecheng.framework.domain.course.ext.CourseDetail;
 import com.xuecheng.framework.domain.course.ext.CourseInfo;
 import com.xuecheng.framework.domain.course.ext.TeachplanNode;
 import com.xuecheng.framework.domain.course.request.CourseListRequest;
 import com.xuecheng.framework.domain.course.response.AddCourseResult;
 import com.xuecheng.framework.domain.course.response.CourseCode;
-import com.xuecheng.framework.domain.media.response.MediaCode;
 import com.xuecheng.framework.exception.RuntimeExceptionCast;
 import com.xuecheng.framework.model.response.CommonCode;
 import com.xuecheng.framework.model.response.QueryResponseResult;
 import com.xuecheng.framework.model.response.QueryResult;
 import com.xuecheng.framework.model.response.ResponseResult;
-import com.xuecheng.framework.utils.TimeUtil;
 import com.xuecheng.manage_course.client.CmsPageClient;
 import com.xuecheng.manage_course.dao.*;
+import com.xuecheng.manage_course.mapper.CourseMapper;
 import com.xuecheng.manage_course.mapper.TeachPlanMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -33,8 +25,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
